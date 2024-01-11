@@ -100,8 +100,8 @@ resource "aws_subnet" "publicsub" {
 }
 
 resource "aws_subnet" "privatesub" {
-  vpc_id     = aws_vpc.vpc.id
-  cidr_block = "10.0.2.0/24"
+  vpc_id            = aws_vpc.vpc.id
+  cidr_block        = "10.0.2.0/24"
   availability_zone = "${var.aws_region}c"
 
   tags = {
@@ -296,7 +296,8 @@ resource "aws_instance" "instance" {
 
 # Create External Services: AWS S3 Bucket
 resource "aws_s3_bucket" "s3bucket_data" {
-  bucket = var.storage_bucket
+  bucket        = var.storage_bucket
+  force_destroy = true
 
   tags = {
     Name        = "Daniela FDO Storage"

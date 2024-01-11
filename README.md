@@ -127,3 +127,9 @@ What do I need:
 - [X] Create the Postgres DB in the same VPC/subnet as the EC2 instance
 - [X] Allow traffic to and from port 5432 in the security group for the PostgresSQL DB
 - [X] Modify the YAML Template to have an External Services configuration
+- [ ] Create Redis
+- [ ] Create Load balancer
+- [ ] Create AWS Launch template
+- [ ] Create Auto Scaling Group
+- [ ] Create yaml template for Active/Active configuration
+- [ ] Create new variables for Redis
