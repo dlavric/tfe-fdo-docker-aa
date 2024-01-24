@@ -157,9 +157,17 @@ resource "aws_security_group" "securitygp" {
   }
 
   ingress {
-    description = "ssh-access"
+    description = "db-access"
     from_port   = 5432
     to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+    ingress {
+    description = "redis-access"
+    from_port   = 6379
+    to_port     = 6379
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -248,8 +256,8 @@ resource "aws_iam_role_policy" "daniela-policy" {
 # Create EC2 instance
 resource "aws_instance" "instance" {
   #ami                  = "ami-0694d931cee176e7d" # eu-west-1
-  ami                  = "ami-0ff1c68c6e837b183" # eu-west-2 
-  instance_type        = "t2.xlarge"
+  ami                  = var.ami
+  instance_type        = var.instance_type
   iam_instance_profile = aws_iam_instance_profile.daniela-profile.name
 
   credit_specification {
@@ -315,7 +323,7 @@ resource "aws_db_subnet_group" "db_subnet_group" {
   }
 }
 
-resource "aws_db_instance" "tfe-db" {
+resource "aws_db_instance" "tfe_db" {
   allocated_storage      = 400
   identifier             = var.db_identifier
   db_name                = var.db_name
@@ -329,3 +337,64 @@ resource "aws_db_instance" "tfe-db" {
   db_subnet_group_name   = aws_db_subnet_group.db_subnet_group.name
   vpc_security_group_ids = [aws_security_group.securitygp.id]
 }
+
+# Create the Application Load Balancer
+resource "aws_lb" "tfe_lb" {
+  name               = "daniela-tfe-lb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.securitygp.id]
+  subnets            = [for subnet in aws_subnet.publicsub : subnet.id]
+
+  enable_deletion_protection = false
+
+  tags = {
+    Environment = "daniela-load-balancer"
+  }
+}
+
+resource "aws_lb_target_group" "tfe_lbtarget" {
+  name        = "daniela-lb-targetgroup"
+  target_type = "alb"
+  port        = 443
+  protocol    = "TCP"
+  vpc_id      = aws_vpc.vpc.id
+}
+
+# Create ASG Group with a Launch Template
+resource "aws_launch_template" "tfe_launchtemp" {
+  name_prefix   = "daniela-launch-template"
+  image_id      = var.ami
+  instance_type = var.instance_type
+}
+
+resource "aws_autoscaling_group" "tfe_asg" {
+  availability_zones = ["${var.aws_region}a"]
+  desired_capacity   = 1
+  max_size           = 1
+  min_size           = 1
+
+  launch_template {
+    id      = aws_launch_template.tfe_launchtemp.id
+    version = "$Latest"
+  }
+}
+
+# Create Redis instance
+resource "aws_elasticache_subnet_group" "redis_subnet_group" {
+  name       = "daniela-redis-subnetgroup"
+  subnet_ids = [aws_subnet.publicsub.id, aws_subnet.privatesub.id]
+}
+
+resource "aws_elasticache_cluster" "tfe_redis" {
+  cluster_id           = "daniela-tfe-redis"
+  engine               = "redis"
+  node_type            = "cache.t3.small"
+  num_cache_nodes      = 1
+  parameter_group_name = "default.redis7.1"
+  engine_version       = "7.1"
+  port                 = 6379
+  security_group_ids   = [aws_security_group.securitygp.id]
+  subnet_group_name    = aws_elasticache_subnet_group.redis_subnet_group.name
+}
+
