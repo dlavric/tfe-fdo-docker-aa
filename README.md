@@ -25,6 +25,8 @@ cd tfe-fdo-docker
 
 - Attach your TFE FDO License that you have purchased to the repository root folder
 
+- Attach your PEM file for your key to connect to your EC2 instance
+
 - Create a file `variables.auto.tfvars` with the following content
 ```hcl
 aws_region       = "eu-west-2"

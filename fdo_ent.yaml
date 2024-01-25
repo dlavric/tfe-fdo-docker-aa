@@ -33,7 +33,7 @@ write_files:
 
             # Vault cluster settings.
             # If you are using the default internal vault, this should be the private routable IP address of the node itself.
-            TFE_VAULT_CLUSTER_ADDRESS: ""
+            TFE_VAULT_CLUSTER_ADDRESS: "https://PRIVATE_IP_ADDRESS_WILL_BE_PLACED_HERE:8201"
           cap_add:
             - IPC_LOCK
           read_only: true
@@ -107,6 +107,12 @@ write_files:
 
        #copy the TFE FDO license to the tfe-fdo/ folder
        sudo aws s3 cp s3://${license_bucket}/${license_filename} /opt/tfe-fdo/${license_filename}
+
+       #retrieve the private ip of the EC2 instance and save it to a variable
+       AWS_TOKEN =`curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"` 
+       LOCAL_IP = `curl -H "X-aws-ec2-metadata-token: $AWS_TOKEN" -v http://169.254.169.254/latest/meta-data/local-ipv4`
+       sed -i "s/PRIVATE_IP_ADDRESS_WILL_BE_PLACED_HERE/$LOCAL_IP/g" /var/tmp/compose.yaml
+
 
        #login to the Terraform Enterprise container image registry
        cat /opt/tfe-fdo/${license_filename} | sudo docker login --username terraform images.releases.hashicorp.com --password-stdin

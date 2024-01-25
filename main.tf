@@ -93,6 +93,7 @@ resource "aws_vpc" "vpc" {
 resource "aws_subnet" "publicsub" {
   vpc_id     = aws_vpc.vpc.id
   cidr_block = "10.0.1.0/24"
+  availability_zone = "${var.aws_region}a"
 
   tags = {
     Name = "daniela-public-subnet"
@@ -346,7 +347,7 @@ resource "aws_lb" "tfe_lb" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.securitygp.id]
-  subnets            = [for subnet in aws_subnet.publicsub : subnet.id]
+  subnets            = [aws_subnet.publicsub.id, aws_subnet.privatesub.id]
 
   enable_deletion_protection = false
 
@@ -371,7 +372,7 @@ resource "aws_launch_template" "tfe_launchtemp" {
 }
 
 resource "aws_autoscaling_group" "tfe_asg" {
-  availability_zones = ["${var.aws_region}a"]
+  availability_zones = ["${var.aws_region}b"]
   desired_capacity   = 1
   max_size           = 1
   min_size           = 1
@@ -393,7 +394,7 @@ resource "aws_elasticache_cluster" "tfe_redis" {
   engine               = "redis"
   node_type            = "cache.t3.small"
   num_cache_nodes      = 1
-  parameter_group_name = "default.redis7.1"
+  parameter_group_name = "default.redis7"
   engine_version       = "7.1"
   port                 = 6379
   security_group_ids   = [aws_security_group.securitygp.id]
