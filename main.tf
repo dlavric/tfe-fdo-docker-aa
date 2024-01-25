@@ -286,7 +286,9 @@ resource "aws_instance" "instance" {
     db_host          = aws_db_instance.tfe-db.endpoint,
     db_name          = var.db_name,
     storage_bucket   = var.storage_bucket,
-    aws_region       = var.aws_region
+    aws_region       = var.aws_region,
+    redis_address    = lookup(aws_elasticache_cluster.tfe_redis.cache_nodes[0], "address", "Redis address not found")
+    redis_port       = aws_elasticache_cluster.tfe_redis.port
 
   })
 
