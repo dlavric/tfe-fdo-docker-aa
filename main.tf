@@ -345,7 +345,7 @@ resource "aws_launch_template" "tfe_launchtemp" {
     device_index         = 0
   }
 
-  user_data = templatefile("fdo_ent.yaml", {
+  user_data = base64encode(templatefile("fdo_ent.yaml", {
     license          = var.license_filename,
     tfe_version      = var.tfe_version,
     tfe_hostname     = var.tfe_hostname,
@@ -365,7 +365,7 @@ resource "aws_launch_template" "tfe_launchtemp" {
     redis_address    = lookup(aws_elasticache_cluster.tfe_redis.cache_nodes[0], "address", "Redis address not found"),
     redis_port       = aws_elasticache_cluster.tfe_redis.port
 
-  })
+  }))
 
   tags = {
     Name = "daniela-tfe-fdodocker"
