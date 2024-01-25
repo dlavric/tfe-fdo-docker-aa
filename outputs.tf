@@ -1,5 +1,5 @@
 output "public_ip" {
-  value = aws_instance.instance.public_ip
+  value = aws_eip.eip.public_ip
 }
 
 output "url" {
@@ -7,5 +7,5 @@ output "url" {
 }
 
 output "ssh_connect" {
-  value = "ssh -i ${var.key_pair}.pem ubuntu@${aws_instance.instance.public_ip}"
+  value = "ssh -i ${var.key_pair}.pem ubuntu@${aws_eip.eip.public_ip}"
 }

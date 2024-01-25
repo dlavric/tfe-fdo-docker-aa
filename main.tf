@@ -91,8 +91,8 @@ resource "aws_vpc" "vpc" {
 }
 
 resource "aws_subnet" "publicsub" {
-  vpc_id     = aws_vpc.vpc.id
-  cidr_block = "10.0.1.0/24"
+  vpc_id            = aws_vpc.vpc.id
+  cidr_block        = "10.0.1.0/24"
   availability_zone = "${var.aws_region}a"
 
   tags = {
@@ -254,57 +254,6 @@ resource "aws_iam_role_policy" "daniela-policy" {
   })
 }
 
-# Create EC2 instance
-resource "aws_instance" "instance" {
-  #ami                  = "ami-0694d931cee176e7d" # eu-west-1
-  ami                  = var.ami
-  instance_type        = var.instance_type
-  iam_instance_profile = aws_iam_instance_profile.daniela-profile.name
-
-  credit_specification {
-    cpu_credits = "unlimited"
-  }
-
-  key_name = var.key_pair
-
-  root_block_device {
-    volume_size = 50
-  }
-
-  user_data = templatefile("fdo_ent.yaml", {
-    license          = var.license_filename,
-    tfe_version      = var.tfe_version,
-    tfe_hostname     = var.tfe_hostname,
-    enc_password     = var.enc_password,
-    email            = var.email,
-    username         = var.username,
-    password         = var.password,
-    certs_bucket     = var.certs_bucket,
-    license_bucket   = var.license_bucket,
-    license_filename = var.license_filename,
-    db_username      = var.db_username,
-    db_password      = var.db_password,
-    db_host          = aws_db_instance.tfe_db.endpoint,
-    db_name          = var.db_name,
-    storage_bucket   = var.storage_bucket,
-    aws_region       = var.aws_region,
-    redis_address    = lookup(aws_elasticache_cluster.tfe_redis.cache_nodes[0], "address", "Redis address not found"),
-    redis_port       = aws_elasticache_cluster.tfe_redis.port
-
-  })
-
-  network_interface {
-    network_interface_id = aws_network_interface.nic.id
-    device_index         = 0
-  }
-
-  tags = {
-    Name = "daniela-tfe-fdodocker"
-  }
-
-}
-
-
 # Create External Services: AWS S3 Bucket
 resource "aws_s3_bucket" "s3bucket_data" {
   bucket        = var.storage_bucket
@@ -364,13 +313,64 @@ resource "aws_lb_target_group" "tfe_lbtarget" {
   vpc_id      = aws_vpc.vpc.id
 }
 
-# Create ASG Group with a Launch Template
+# Create the Launch Template for the ASG
 resource "aws_launch_template" "tfe_launchtemp" {
   name_prefix   = "daniela-launch-template"
   image_id      = var.ami
   instance_type = var.instance_type
+  key_name      = var.key_pair
+
+  iam_instance_profile {
+    name = aws_iam_instance_profile.daniela-profile.name
+  }
+
+  credit_specification {
+    cpu_credits = "unlimited"
+  }
+
+  block_device_mappings {
+    device_name = "/dev/sda1"
+
+    ebs {
+      delete_on_termination = true
+      volume_size           = 50
+    }
+  }
+
+  network_interfaces {
+    network_interface_id = aws_network_interface.nic.id
+    device_index         = 0
+  }
+
+  user_data = templatefile("fdo_ent.yaml", {
+    license          = var.license_filename,
+    tfe_version      = var.tfe_version,
+    tfe_hostname     = var.tfe_hostname,
+    enc_password     = var.enc_password,
+    email            = var.email,
+    username         = var.username,
+    password         = var.password,
+    certs_bucket     = var.certs_bucket,
+    license_bucket   = var.license_bucket,
+    license_filename = var.license_filename,
+    db_username      = var.db_username,
+    db_password      = var.db_password,
+    db_host          = aws_db_instance.tfe_db.endpoint,
+    db_name          = var.db_name,
+    storage_bucket   = var.storage_bucket,
+    aws_region       = var.aws_region,
+    redis_address    = lookup(aws_elasticache_cluster.tfe_redis.cache_nodes[0], "address", "Redis address not found"),
+    redis_port       = aws_elasticache_cluster.tfe_redis.port
+
+  })
+
+  tags = {
+    Name = "daniela-tfe-fdodocker"
+  }
+
 }
 
+# Create ASG Group with a Launch Template. The ASG will create the EC2 instances
 resource "aws_autoscaling_group" "tfe_asg" {
   availability_zones = ["${var.aws_region}b"]
   desired_capacity   = 1
