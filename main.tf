@@ -198,7 +198,7 @@ resource "aws_network_interface" "nic" {
 # }
 
 resource "aws_eip" "eip" {
-  domain   = "vpc"
+  domain = "vpc"
 
   tags = {
     Name = "daniela-eip"
@@ -310,9 +310,8 @@ resource "aws_lb" "tfe_lb" {
 
 resource "aws_lb_target_group" "tfe_lbtarget" {
   name        = "daniela-lb-targetgroup"
-  target_type = "alb"
   port        = 443
-  protocol    = "TCP"
+  protocol    = "HTTPS"
   vpc_id      = aws_vpc.vpc.id
 }
 
@@ -341,8 +340,8 @@ resource "aws_launch_template" "tfe_launchtemp" {
   }
 
   network_interfaces {
-    network_interface_id = aws_network_interface.nic.id
-    device_index         = 0
+    security_groups = [aws_security_group.securitygp.id]
+    subnet_id       = aws_subnet.privatesub.id
   }
 
   user_data = base64encode(templatefile("fdo_ent.yaml", {
@@ -375,10 +374,14 @@ resource "aws_launch_template" "tfe_launchtemp" {
 
 # Create ASG Group with a Launch Template. The ASG will create the EC2 instances
 resource "aws_autoscaling_group" "tfe_asg" {
-  availability_zones = ["${var.aws_region}b"]
-  desired_capacity   = 1
-  max_size           = 1
-  min_size           = 1
+  #availability_zones     = ["${var.aws_region}"]
+  desired_capacity       = 1
+  max_size               = 1
+  min_size               = 1
+  vpc_zone_identifier    = [aws_subnet.publicsub.id, aws_subnet.privatesub.id]
+  target_group_arns      = [aws_lb_target_group.tfe_lbtarget.arn]
+  force_delete           = true
+  force_delete_warm_pool = true
 
   launch_template {
     id      = aws_launch_template.tfe_launchtemp.id
