@@ -198,8 +198,11 @@ resource "aws_network_interface" "nic" {
 # }
 
 resource "aws_eip" "eip" {
-  instance = aws_instance.instance.id
   domain   = "vpc"
+
+  tags = {
+    Name = "daniela-eip"
+  }
 }
 
 # Create roles and policies to attach to the instance
@@ -271,7 +274,7 @@ resource "aws_db_subnet_group" "db_subnet_group" {
   subnet_ids = [aws_subnet.publicsub.id, aws_subnet.privatesub.id]
 
   tags = {
-    Name = "daniela-db-subnet-group "
+    Name = "daniela-db-subnet-group"
   }
 }
 
