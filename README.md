@@ -133,3 +133,4 @@ What do I need:
 - [ ] Create Auto Scaling Group
 - [ ] Create yaml template for Active/Active configuration
 - [ ] Create new variables for Redis
+- [ ] Open ports for Redis and Vault in the security group
