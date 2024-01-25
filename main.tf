@@ -164,7 +164,7 @@ resource "aws_security_group" "securitygp" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-    ingress {
+  ingress {
     description = "redis-access"
     from_port   = 6379
     to_port     = 6379
@@ -283,11 +283,11 @@ resource "aws_instance" "instance" {
     license_filename = var.license_filename,
     db_username      = var.db_username,
     db_password      = var.db_password,
-    db_host          = aws_db_instance.tfe-db.endpoint,
+    db_host          = aws_db_instance.tfe_db.endpoint,
     db_name          = var.db_name,
     storage_bucket   = var.storage_bucket,
     aws_region       = var.aws_region,
-    redis_address    = lookup(aws_elasticache_cluster.tfe_redis.cache_nodes[0], "address", "Redis address not found")
+    redis_address    = lookup(aws_elasticache_cluster.tfe_redis.cache_nodes[0], "address", "Redis address not found"),
     redis_port       = aws_elasticache_cluster.tfe_redis.port
 
   })
