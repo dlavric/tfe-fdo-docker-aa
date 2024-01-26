@@ -3,16 +3,24 @@ data "aws_route53_zone" "zone" {
   name = var.tfe_domain
 }
 
-
-resource "aws_route53_record" "www" {
+# Create DNS for the Load Balancer
+resource "aws_route53_record" "lb" {
   zone_id = data.aws_route53_zone.zone.zone_id
-  #name    = "fdo-docker.${data.aws_route53_zone.zone.name}"
   name = "${var.tfe_subdomain}.${data.aws_route53_zone.zone.name}"
+  type = "CNAME"
+  ttl  = "300"
+  records = [aws_lb.tfe_lb.dns_name] #point it to the lb dns name
+}
+
+# Create DNS for the Bastion server
+resource "aws_route53_record" "bastion" {
+  zone_id = data.aws_route53_zone.zone.zone_id
+  name = "${var.tfe_subdomain}.${data.aws_route53_zone.zone.name}-bastion"
   type = "A"
   ttl  = "300"
-  #records = ["34.253.52.28"]
   records = [aws_eip.eip.public_ip]
 }
+
 
 # Create Certificates
 resource "tls_private_key" "private_key" {
@@ -21,14 +29,11 @@ resource "tls_private_key" "private_key" {
 
 resource "acme_registration" "reg" {
   account_key_pem = tls_private_key.private_key.private_key_pem
-  #email_address   = "dededanutza@gmail.com"
   email_address = var.email
 }
 
 resource "acme_certificate" "certificate" {
   account_key_pem = acme_registration.reg.account_key_pem
-  #common_name                  = "fdo-docker.${data.aws_route53_zone.zone.name}"
-  #subject_alternative_names    = ["fdo-docker.${data.aws_route53_zone.zone.name}"]
   common_name                  = "${var.tfe_subdomain}.${data.aws_route53_zone.zone.name}"
   subject_alternative_names    = ["${var.tfe_subdomain}.${data.aws_route53_zone.zone.name}"]
   disable_complete_propagation = true
@@ -173,6 +178,15 @@ resource "aws_security_group" "securitygp" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+
+  ingress {
+    description = "vault-access"
+    from_port   = 8201
+    to_port     = 8201
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     description = "egress-rule"
     from_port   = 0
@@ -186,23 +200,54 @@ resource "aws_security_group" "securitygp" {
   }
 }
 
-
+# Create network to attach to the Bastion server
 resource "aws_network_interface" "nic" {
   subnet_id       = aws_subnet.publicsub.id
-  security_groups = [aws_security_group.securitygp.id]
+  #security_groups = [aws_security_group.securitygp.id]
 }
 
-# resource "aws_network_interface_sg_attachment" "sg_attachment" {
-#   security_group_id    = aws_security_group.securitygp.id
-#   network_interface_id = aws_instance.instance.primary_network_interface_id
-# }
+
+resource "aws_network_interface_sg_attachment" "sg_attachment" {
+  security_group_id    = aws_security_group.securitygp.id
+  network_interface_id = aws_network_interface.nic.id
+}
+
 
 resource "aws_eip" "eip" {
   domain = "vpc"
+  associate_with_private_ip = aws_network_interface.nic.private_ip
+  instance = aws_instance.bastion.id
 
   tags = {
     Name = "daniela-eip"
   }
+}
+
+# Create Bastion Server/Jump host
+resource "aws_instance" "bastion" {
+  ami                  = var.ami # eu-west-2 
+  instance_type        = var.instance_type
+  iam_instance_profile = aws_iam_instance_profile.daniela-profile.name
+
+  credit_specification {
+    cpu_credits = "unlimited"
+  }
+
+  key_name = var.key_pair
+
+  root_block_device {
+    volume_size = 50
+  }
+
+    network_interface {
+    network_interface_id = aws_network_interface.nic.id
+    device_index         = 0
+  }
+
+  tags = {
+    Name = "daniela-tfe-bastion"
+  }
+
 }
 
 # Create roles and policies to attach to the instance
@@ -256,6 +301,8 @@ resource "aws_iam_role_policy" "daniela-policy" {
     ]
   })
 }
+
+
 
 # Create External Services: AWS S3 Bucket
 resource "aws_s3_bucket" "s3bucket_data" {
