@@ -203,14 +203,14 @@ resource "aws_security_group" "securitygp" {
 # Create network to attach to the Bastion server
 resource "aws_network_interface" "nic" {
   subnet_id       = aws_subnet.publicsub.id
-  #security_groups = [aws_security_group.securitygp.id]
+  security_groups = [aws_security_group.securitygp.id]
 }
 
 
-resource "aws_network_interface_sg_attachment" "sg_attachment" {
-  security_group_id    = aws_security_group.securitygp.id
-  network_interface_id = aws_network_interface.nic.id
-}
+# resource "aws_network_interface_sg_attachment" "sg_attachment" {
+#   #security_group_id    = aws_security_group.securitygp.id
+#   network_interface_id = aws_network_interface.nic.id
+# }
 
 
 resource "aws_eip" "eip" {
