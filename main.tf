@@ -202,7 +202,7 @@ resource "aws_security_group" "securitygp" {
 
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.eip.id
-  subnet_id     = aws_subnet.publicsub.id
+  subnet_id     = aws_subnet.privatesub.id
 
   tags = {
     Name = "daniela-nat-gateway"
@@ -212,6 +212,25 @@ resource "aws_nat_gateway" "nat" {
   # on the Internet Gateway for the VPC.
   depends_on = [aws_internet_gateway.internetgw]
 }
+
+resource "aws_route_table" "routenat" {
+  vpc_id = aws_vpc.vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat.id
+  }
+
+  tags = {
+    Name = "daniela-routenat"
+  }
+}
+
+resource "aws_route_table_association" "routenat_association" {
+  subnet_id      = aws_subnet.privatesub.id
+  route_table_id = aws_route_table.routenat.id
+}
+
 
 # Create network to attach to the Bastion server
 resource "aws_network_interface" "nic" {
