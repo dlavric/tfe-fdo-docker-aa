@@ -10,3 +10,4 @@ output "ssh_connect" {
   value = "ssh -i ${var.key_pair}.pem ubuntu@${aws_eip.eip.public_ip}" 
 #ssh -J ubuntu@jumphost_public_ip ubuntu@private_ip_tfe_instance
 }
+

@@ -391,7 +391,7 @@ resource "aws_launch_template" "tfe_launchtemp" {
     subnet_id       = aws_subnet.privatesub.id
   }
 
-  user_data = base64encode(templatefile("fdo_ent.yaml", {
+  user_data = base64encode(templatefile("${path.module}/fdo_ent.yaml", {
     license          = var.license_filename,
     tfe_version      = var.tfe_version,
     tfe_hostname     = var.tfe_hostname,
