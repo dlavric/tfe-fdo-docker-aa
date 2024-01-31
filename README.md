@@ -25,6 +25,8 @@ cd tfe-fdo-docker
 
 - Attach your TFE FDO License that you have purchased to the repository root folder
 
+- Attach your PEM file for your key to connect to your EC2 instance
+
 - Create a file `variables.auto.tfvars` with the following content
 ```hcl
 aws_region       = "eu-west-2"
@@ -127,3 +129,10 @@ What do I need:
 - [X] Create the Postgres DB in the same VPC/subnet as the EC2 instance
 - [X] Allow traffic to and from port 5432 in the security group for the PostgresSQL DB
 - [X] Modify the YAML Template to have an External Services configuration
+- [ ] Create Redis
+- [ ] Create Load balancer
+- [ ] Create AWS Launch template
+- [ ] Create Auto Scaling Group
+- [ ] Create yaml template for Active/Active configuration
+- [ ] Create new variables for Redis
+- [ ] Open ports for Redis and Vault in the security group
