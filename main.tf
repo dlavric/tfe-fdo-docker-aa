@@ -6,18 +6,18 @@ data "aws_route53_zone" "zone" {
 # Create DNS for the Load Balancer
 resource "aws_route53_record" "lb" {
   zone_id = data.aws_route53_zone.zone.zone_id
-  name = "${var.tfe_subdomain}.${data.aws_route53_zone.zone.name}"
-  type = "CNAME"
-  ttl  = "300"
+  name    = "${var.tfe_subdomain}.${data.aws_route53_zone.zone.name}"
+  type    = "CNAME"
+  ttl     = "300"
   records = [aws_lb.tfe_lb.dns_name] #point it to the lb dns name
 }
 
 # Create DNS for the Bastion server
 resource "aws_route53_record" "bastion" {
   zone_id = data.aws_route53_zone.zone.zone_id
-  name = "${var.tfe_subdomain}.${data.aws_route53_zone.zone.name}-bastion"
-  type = "A"
-  ttl  = "300"
+  name    = "${var.tfe_subdomain}.${data.aws_route53_zone.zone.name}-bastion"
+  type    = "A"
+  ttl     = "300"
   records = [aws_eip.eip.public_ip]
 }
 
@@ -29,11 +29,11 @@ resource "tls_private_key" "private_key" {
 
 resource "acme_registration" "reg" {
   account_key_pem = tls_private_key.private_key.private_key_pem
-  email_address = var.email
+  email_address   = var.email
 }
 
 resource "acme_certificate" "certificate" {
-  account_key_pem = acme_registration.reg.account_key_pem
+  account_key_pem              = acme_registration.reg.account_key_pem
   common_name                  = "${var.tfe_subdomain}.${data.aws_route53_zone.zone.name}"
   subject_alternative_names    = ["${var.tfe_subdomain}.${data.aws_route53_zone.zone.name}"]
   disable_complete_propagation = true
@@ -217,7 +217,7 @@ resource "aws_route_table" "routenat" {
   vpc_id = aws_vpc.vpc.id
 
   route {
-    cidr_block = "0.0.0.0/0"
+    cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.nat.id
   }
 
@@ -246,9 +246,9 @@ resource "aws_network_interface" "nic" {
 
 
 resource "aws_eip" "eip" {
-  domain = "vpc"
+  domain                    = "vpc"
   associate_with_private_ip = aws_network_interface.nic.private_ip
-  instance = aws_instance.bastion.id
+  instance                  = aws_instance.bastion.id
 
   tags = {
     Name = "daniela-eip"
@@ -256,7 +256,7 @@ resource "aws_eip" "eip" {
 }
 
 resource "aws_eip" "nateip" {
-  domain = "vpc"
+  domain                    = "vpc"
   associate_with_private_ip = aws_network_interface.nic.private_ip
 
   tags = {
@@ -280,7 +280,7 @@ resource "aws_instance" "bastion" {
     volume_size = 50
   }
 
-    network_interface {
+  network_interface {
     network_interface_id = aws_network_interface.nic.id
     device_index         = 0
   }
@@ -397,10 +397,10 @@ resource "aws_lb" "tfe_lb" {
 }
 
 resource "aws_lb_target_group" "tfe_lbtarget" {
-  name        = "daniela-lb-targetgroup"
-  port        = 443
-  protocol    = "HTTPS"
-  vpc_id      = aws_vpc.vpc.id
+  name     = "daniela-lb-targetgroup"
+  port     = 443
+  protocol = "HTTPS"
+  vpc_id   = aws_vpc.vpc.id
 }
 
 resource "aws_lb_listener" "tfe_front_end" {
@@ -417,9 +417,9 @@ resource "aws_lb_listener" "tfe_front_end" {
 }
 
 resource "aws_acm_certificate" "lbcert" {
-  private_key = acme_certificate.certificate.private_key_pem #- (Required) Certificate's PEM-formatted private key
-  certificate_body = acme_certificate.certificate.certificate_pem #- (Required) Certificate's PEM-formatted public key
-  certificate_chain = acme_certificate.certificate.issuer_pem #- (Optional) Certificate's PEM-formatted chain
+  private_key       = acme_certificate.certificate.private_key_pem #- (Required) Certificate's PEM-formatted private key
+  certificate_body  = acme_certificate.certificate.certificate_pem #- (Required) Certificate's PEM-formatted public key
+  certificate_chain = acme_certificate.certificate.issuer_pem      #- (Optional) Certificate's PEM-formatted chain
 
   tags = {
     Environment = "daniela-acm-cert"
@@ -494,7 +494,7 @@ resource "aws_autoscaling_group" "tfe_asg" {
   desired_capacity       = 1
   max_size               = 1
   min_size               = 1
-  vpc_zone_identifier    = [aws_subnet.publicsub.id, aws_subnet.privatesub.id]
+  vpc_zone_identifier    = [aws_subnet.privatesub.id]
   target_group_arns      = [aws_lb_target_group.tfe_lbtarget.arn]
   force_delete           = true
   force_delete_warm_pool = true
@@ -504,7 +504,13 @@ resource "aws_autoscaling_group" "tfe_asg" {
     version = "$Latest"
   }
 
-  depends_on = [ aws_nat_gateway.nat ]
+  tag {
+    key                 = "Name"
+    value               = "daniela-tfe-asg"
+    propagate_at_launch = true
+  }
+
+  depends_on = [aws_nat_gateway.nat]
 }
 
 # Create Redis instance
