@@ -491,8 +491,8 @@ resource "aws_launch_template" "tfe_launchtemp" {
 # Create ASG Group with a Launch Template. The ASG will create the EC2 instances
 resource "aws_autoscaling_group" "tfe_asg" {
   #availability_zones     = ["${var.aws_region}"]
-  desired_capacity       = 1
-  max_size               = 1
+  desired_capacity       = 2
+  max_size               = 2
   min_size               = 1
   vpc_zone_identifier    = [aws_subnet.privatesub.id]
   target_group_arns      = [aws_lb_target_group.tfe_lbtarget.arn]
