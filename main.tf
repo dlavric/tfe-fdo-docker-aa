@@ -202,7 +202,7 @@ resource "aws_security_group" "securitygp" {
 
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nateip.id
-  subnet_id     = aws_subnet.privatesub.id
+  subnet_id     = aws_subnet.publicsub.id
 
   tags = {
     Name = "daniela-nat-gateway"
