@@ -201,7 +201,7 @@ resource "aws_security_group" "securitygp" {
 }
 
 resource "aws_nat_gateway" "nat" {
-  allocation_id = aws_eip.eip.id
+  allocation_id = aws_eip.nateip.id
   subnet_id     = aws_subnet.privatesub.id
 
   tags = {
@@ -252,6 +252,15 @@ resource "aws_eip" "eip" {
 
   tags = {
     Name = "daniela-eip"
+  }
+}
+
+resource "aws_eip" "nateip" {
+  domain = "vpc"
+  associate_with_private_ip = aws_network_interface.nic.private_ip
+
+  tags = {
+    Name = "daniela-eip-nat"
   }
 }
 
@@ -394,6 +403,34 @@ resource "aws_lb_target_group" "tfe_lbtarget" {
   vpc_id      = aws_vpc.vpc.id
 }
 
+resource "aws_lb_listener" "tfe_front_end" {
+  load_balancer_arn = aws_lb.tfe_lb.arn
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = aws_acm_certificate.lbcert.arn
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.tfe_lbtarget.arn
+  }
+}
+
+resource "aws_acm_certificate" "lbcert" {
+  private_key = acme_certificate.certificate.private_key_pem #- (Required) Certificate's PEM-formatted private key
+  certificate_body = acme_certificate.certificate.certificate_pem #- (Required) Certificate's PEM-formatted public key
+  certificate_chain = acme_certificate.certificate.issuer_pem #- (Optional) Certificate's PEM-formatted chain
+
+  tags = {
+    Environment = "daniela-acm-cert"
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+
 # Create the Launch Template for the ASG
 resource "aws_launch_template" "tfe_launchtemp" {
   name_prefix   = "daniela-launch-template"
@@ -466,6 +503,8 @@ resource "aws_autoscaling_group" "tfe_asg" {
     id      = aws_launch_template.tfe_launchtemp.id
     version = "$Latest"
   }
+
+  depends_on = [ aws_nat_gateway.nat ]
 }
 
 # Create Redis instance

@@ -11,3 +11,6 @@ output "ssh_connect" {
 #ssh -J ubuntu@jumphost_public_ip ubuntu@private_ip_tfe_instance
 }
 
+#create the key.pem file on the asg instance
+#chmod 600 daniela-key.pem
+#ssh -i daniela-fdo-key2.pem ubuntu@private_ip
