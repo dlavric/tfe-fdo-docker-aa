@@ -1,5 +1,5 @@
 # tfe-fdo-docker
-This repository will install TFE FDO on Docker in External Services configuration on AWS infrastructure with Postgres 14.9 version.
+This repository will install TFE FDO on Docker in Active/Active mode with External Services configuration on AWS infrastructure with Postgres 14.9 version.
 
 Here is the [Terraform Enterprise official documentation](https://developer.hashicorp.com/terraform/enterprise/flexible-deployments/install/docker/install)
 
