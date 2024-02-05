@@ -92,7 +92,7 @@ terraform apply
 
 - Verify the output matches in number of resources
 ```shell
-Plan: 26 to add, 0 to change, 0 to destroy.
+Plan: 40 to add, 0 to change, 0 to destroy.
 ```
 
 - Wait a couple of minutes for TFE to become online
@@ -106,7 +106,7 @@ terraform destroy
 
 - Verify the output matches in number of resources
 ```shell
-
+Destroy complete! Resources: 40 destroyed.
 ```
 
 
@@ -129,10 +129,10 @@ What do I need:
 - [X] Create the Postgres DB in the same VPC/subnet as the EC2 instance
 - [X] Allow traffic to and from port 5432 in the security group for the PostgresSQL DB
 - [X] Modify the YAML Template to have an External Services configuration
-- [ ] Create Redis
-- [ ] Create Load balancer
-- [ ] Create AWS Launch template
-- [ ] Create Auto Scaling Group
-- [ ] Create yaml template for Active/Active configuration
-- [ ] Create new variables for Redis
-- [ ] Open ports for Redis and Vault in the security group
+- [X] Create Redis
+- [X] Create Load balancer
+- [X] Create AWS Launch template
+- [X] Create Auto Scaling Group
+- [X] Create yaml template for Active/Active configuration
+- [X] Create new variables for Redis
+- [X] Open ports for Redis and Vault in the security group
